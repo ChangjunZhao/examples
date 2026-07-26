@@ -3,10 +3,11 @@
 # proxy terminating a wildcard certificate, with the E2B-compatible surface on.
 #
 #   export SANDRPOD_DOMAIN=example.com
-#   docker compose -f docker/docker-compose.prod.yml up -d --wait
+#   ./03-deploy.sh          # or: docker compose up -d --wait
 #
-# Full walkthrough — DNS records, the wildcard certificate, renewal, and the
-# verification sweep — in docs/PRODUCTION_DEPLOYMENT.md. Scaling past one host:
+# Maintained upstream as docker/docker-compose.prod.yml in
+# github.com/sandrpod/sandrpod; this is a copy. The walkthrough is
+# docs/PRODUCTION_DEPLOYMENT.md there, scaling out is
 # docs/MULTI_INSTANCE_DEPLOYMENT.md.
 services:
   postgres:
