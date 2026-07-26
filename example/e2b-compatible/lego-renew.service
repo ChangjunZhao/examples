@@ -1,0 +1,12 @@
+[Unit]
+Description=Renew the wildcard certificate
+After=network-online.target
+
+[Service]
+Type=oneshot
+# DNS-provider credentials plus SANDRPOD_DOMAIN / ACME_EMAIL
+EnvironmentFile=/etc/sandrpod/renew.env
+# 剩余有效期不足 30 天才真正续；否则直接退出，可以每天跑
+ExecStart=/usr/local/bin/lego --email ${ACME_EMAIL} --accept-tos   --dns tencentcloud --dns.propagation-wait 90s   -d ${SANDRPOD_DOMAIN} -d *.${SANDRPOD_DOMAIN}   --path /etc/lego renew --days 30
+# 续下来的新证书要让 Caddy 重新读取
+ExecStartPost=-/usr/bin/docker kill --signal=SIGUSR1 sandrpod-caddy

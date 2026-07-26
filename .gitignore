@@ -1,0 +1,7 @@
+# credentials the scripts source — every example ships a .example template
+*.env
+!*.env.example
+.env
+
+# generated at deploy time
+chart-from-sandbox.png
