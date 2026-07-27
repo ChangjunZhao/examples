@@ -6,6 +6,7 @@ before the article went out.
 
 | Directory | Article | What it does |
 |---|---|---|
+| [`example/deepagents-sandbox`](example/deepagents-sandbox) | *Two ways to give a deepagents agent a sandbox you own* | The same twelve backend assertions and the same agent task run down both integration paths — E2B's own deepagents backend and SandrPod's — so the comparison is like for like. |
 | [`example/e2b-compatible`](example/e2b-compatible) | *Self-hosting an E2B-compatible sandbox stack, from an empty server* | Takes a blank VM to a deployment the unmodified `e2b` Python SDK talks to: Docker, wildcard DNS, a wildcard certificate via DNS-01, four containers, and a 50-check acceptance sweep against the real client. |
 
 ## Conventions
