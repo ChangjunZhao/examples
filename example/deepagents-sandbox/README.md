@@ -4,7 +4,9 @@ Companion code for *"Two ways to give a deepagents agent a sandbox you own"*.
 The same assertions and the same agent task run down both integration paths, so
 the two columns in the article are comparable rather than two separate stories.
 
-Verified against a live SandrPod v0.5.3 deployment with `deepagents` 0.6.12,
+Verified against a live SandrPod v0.5.3 deployment — the version these numbers
+were measured on; v0.5.4 followed with a tray fix that does not touch this
+surface — with `deepagents` 0.6.12,
 `langchain-e2b` 0.0.6 and `langchain-sandrpod` 0.2.7: **12/12 backend
 assertions and 3/3 agent runs down each route**.
 
