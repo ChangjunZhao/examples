@@ -149,7 +149,12 @@ def main():
         import threading
         out = []
         h = sbx.pty.create(size=PtySize(cols=80, rows=24))
-        t = threading.Thread(target=lambda: h.wait(on_pty=out.append), daemon=True)
+        def _wait():
+            try:
+                h.wait(on_pty=out.append)
+            except Exception:
+                pass  # kill() ends the handle; the check is the echo below
+        t = threading.Thread(target=_wait, daemon=True)
         t.start()
         time.sleep(1)
         sbx.pty.send_stdin(h.pid, b"echo pty-works\n")
@@ -158,7 +163,9 @@ def main():
         killed = sbx.pty.kill(h.pid)
         t.join(timeout=5)
         text = b"".join(out).decode(errors="replace")
-        return f"killed={killed}, echoed={'pty-works' in text}, {len(out)} frame(s)"
+        if "pty-works" not in text:
+            raise AssertionError("PTY echo missing: %r" % text[-200:])
+        return f"killed={killed}, echoed=True, {len(out)} frame(s)"
 
     # ---------- observability ----------
     check("metrics", "get_metrics")(
@@ -191,12 +198,18 @@ def main():
         _snap["id"] = info.snapshot_id
         return info
     check("newer", "create_snapshot")(_snapshot)
-    check("newer", "list_snapshots")(
-        lambda: any(x.snapshot_id == _snap.get("id")
-                    for x in Sandbox.list_snapshots(limit=100).next_items()))
+    def _snap_listed():
+        if not any(x.snapshot_id == _snap.get("id")
+                   for x in Sandbox.list_snapshots(limit=100).next_items()):
+            raise AssertionError("snapshot %r not listed" % _snap.get("id"))
+        return "listed"
+    check("newer", "list_snapshots")(_snap_listed)
     _forks = []
     def _fork():
         children = sbx.fork()
+        for child in children:
+            if isinstance(child, Exception):
+                raise AssertionError("fork: %s" % child)
         _forks.extend(children)
         return children
     check("newer", "fork")(_fork)
@@ -204,7 +217,16 @@ def main():
         try: child.kill()
         except Exception: pass
     if _snap.get("id"):
-        check("newer", "delete_snapshot")(lambda: Sandbox.delete_snapshot(_snap["id"]))
+        def _delete():
+            if not Sandbox.delete_snapshot(_snap["id"]):
+                raise AssertionError("delete_snapshot returned false")
+            return "deleted"
+        check("newer", "delete_snapshot")(_delete)
+    # fork creates its own image; remove it after the children are gone.
+    for x in Sandbox.list_snapshots(limit=100).next_items():
+        if sid in x.snapshot_id and ":fork-" in x.snapshot_id:
+            try: Sandbox.delete_snapshot(x.snapshot_id)
+            except Exception: pass
 
     # ---------- pause / resume ----------
     check("lifecycle", "pause")(lambda: sbx.pause())
