@@ -3,11 +3,10 @@
 # proxy terminating a wildcard certificate, with the E2B-compatible surface on.
 #
 #   export SANDRPOD_DOMAIN=example.com
-#   ./03-deploy.sh          # or: docker compose up -d --wait
+#   docker compose -f docker/docker-compose.prod.yml up -d --wait
 #
-# Maintained upstream as docker/docker-compose.prod.yml in
-# github.com/sandrpod/sandrpod; this is a copy. The walkthrough is
-# docs/PRODUCTION_DEPLOYMENT.md there, scaling out is
+# Full walkthrough — DNS records, the wildcard certificate, renewal, and the
+# verification sweep — in docs/PRODUCTION_DEPLOYMENT.md. Scaling past one host:
 # docs/MULTI_INSTANCE_DEPLOYMENT.md.
 services:
   postgres:
@@ -28,7 +27,7 @@ services:
       retries: 5
 
   server:
-    image: ghcr.io/sandrpod/server:v0.5.5
+    image: ghcr.io/sandrpod/server:v0.12.0
     container_name: sandrpod-server
     restart: unless-stopped
     command:
@@ -42,12 +41,21 @@ services:
       #   api.<domain>                    -> control plane
       #   <port>-<sandboxID>.<domain>     -> tunnel -> toolbox (envd) in the sandbox
       SANDRPOD_E2B_DOMAIN: ${SANDRPOD_DOMAIN:?set SANDRPOD_DOMAIN}
+      # Per-tenant caps for a host on a public IP. Off by default; they apply to
+      # user-role tokens on both the native and E2B surfaces (admins exempt).
+      # See "Bound what one key can do" in docs/PRODUCTION_DEPLOYMENT.md.
+      # SANDRPOD_MAX_SANDBOXES_PER_OWNER: 5
+      # SANDRPOD_RATE_LIMIT: 10
+      # SANDRPOD_SANDBOX_IDLE_TIMEOUT: 2h
       TZ: Asia/Shanghai
     ports:
-      # Loopback only. Once SANDRPOD_E2B_DOMAIN is set, every host under that
-      # domain belongs to the E2B gateway — the native admin API (/api/v1/*,
-      # token issuance) returns 404 there. Reach it over SSH:
-      #   ssh -L 8080:127.0.0.1:8080 root@<host>
+      # Loopback only, so the native API is reachable on the host but not from
+      # the internet — via SSH: ssh -L 8080:127.0.0.1:8080 root@<host>.
+      #
+      # It does NOT have to be this way: on api.<domain> the E2B gateway takes
+      # only its own paths, so /api/v1/* reaches the native API through the
+      # proxy on that same hostname. Drop this binding if sandrpod-cli or the
+      # SDKs need to reach you from elsewhere.
       - "127.0.0.1:8080:8080"
     networks: [sandrpod]
     depends_on:
@@ -60,11 +68,19 @@ services:
       start_period: 3s
 
   poder:
-    image: ghcr.io/sandrpod/poder:v0.5.5
+    image: ghcr.io/sandrpod/poder:v0.12.0
     container_name: sandrpod-poder
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # The worker writes its generated ID to /var/lib/sandrpod/poder-id and
+      # reuses it on restart. Without somewhere durable to put it, every
+      # `docker compose up -d` that recreates this container registers a NEW
+      # worker: the old record lingers until the offline reaper takes it, the
+      # sandbox containers it owned are orphaned, and until then the scheduler
+      # can still pick the dead one and answer "poder tunnel not available".
+      # Set PODER_ID instead if you would rather pin it explicitly.
+      - poder-data:/var/lib/sandrpod
     environment:
       API_URL: http://server:8080
       SANDRPOD_TOKEN: ${SANDRPOD_TOKEN:?set SANDRPOD_TOKEN}
@@ -74,12 +90,13 @@ services:
       # Set SANDRPOD_E2B_PROVIDER instead to provision real cloud VMs.
       REGION: ${REGION:-local}
       PROVIDER_TYPE: local
-      # Sandbox containers must land on the worker's network so it can reach
-      # their toolbox. This string goes straight to the Docker API, so it must
-      # be the network's REAL name — hence `name:` pinned below. Get it wrong
-      # and sandboxes are created fine but every exec hangs.
+      # The worker's management network and the egress proxy's outbound leg.
+      # Sandboxes get their own per-sandbox bridge, so this is no longer the
+      # sandbox data path; pinning the name below keeps service DNS stable.
       SANDRPOD_NETWORK: sandrpod
-      SANDRPOD_TOOLBOX_IMAGE: ${SANDRPOD_TOOLBOX_IMAGE:-ghcr.io/sandrpod/toolbox:v0.5.5}
+      # Needed inside the sandbox for the MCP/OAuth callback hostname.
+      SANDRPOD_E2B_DOMAIN: ${SANDRPOD_DOMAIN:?set SANDRPOD_DOMAIN}
+      SANDRPOD_TOOLBOX_IMAGE: ${SANDRPOD_TOOLBOX_IMAGE:-ghcr.io/sandrpod/toolbox:v0.12.0}
       TZ: Asia/Shanghai
     networks: [sandrpod]
     depends_on:
@@ -105,6 +122,7 @@ services:
 volumes:
   pgdata:
   caddy-data:
+  poder-data:
 
 networks:
   sandrpod:

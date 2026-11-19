@@ -4,8 +4,9 @@ Companion code for *"Self-hosting an E2B-compatible sandbox stack, from an empty
 server"*. Four scripts take a blank VM to a deployment the **unmodified** `e2b`
 Python SDK talks to.
 
-Verified end to end on CentOS Stream 10 against `e2b` 2.35.0 and
-`e2b-code-interpreter` 2.9.0: **50 checks, 48 passing** (the 2 failures are unimplemented calls, see below).
+Updated for SandrPod **v0.12.0**. The sweep targets the unmodified `e2b` SDK and
+records snapshots/fork alongside the original lifecycle, filesystem, command,
+PTY and port checks.
 
 ## What you need
 
@@ -82,16 +83,20 @@ entirely on `Host`. Caddy forwards it by default. If you swap in nginx you must
 write `proxy_set_header Host $host;` or every sandbox URL silently stops
 resolving to a sandbox.
 
-**The Docker network name.** `SANDRPOD_NETWORK` goes straight to the Docker API,
-and Compose prefixes network names with the project name unless you pin them —
-which is why `docker-compose.yml` sets `name: sandrpod`. Get this wrong and the
-failure is quiet: sandboxes get created, land on the wrong network, and every
-exec hangs until it times out.
+**The Docker network name.** `SANDRPOD_NETWORK` is the worker's management
+network and the egress proxy's outbound leg. Sandboxes get their own
+`sandrpod-s-<hash>` bridge and the worker attaches itself, so this is no longer
+the sandbox data path; `docker-compose.yml` still pins `name: sandrpod` so the
+service DNS (`server`, `postgres`) stays stable.
 
-## Not implemented
+## Snapshots and fork
 
-`create_snapshot()`, `list_snapshots()` and `fork()` return `405`. `envVars` on
-create is accepted but has not been exercised against the real SDK.
+`create_snapshot()`, `list_snapshots()` and `fork()` are implemented in
+SandrPod v0.12.0 and exercised by `e2b_sweep.py`. A fork creates another running
+sandbox, so it needs a free sandbox slot; on a quota-limited workspace the
+per-item error is reported by the SDK rather than hiding the successful forks.
+
+`envVars` on create is covered by the engine's own live suite.
 
 ## Where this came from
 

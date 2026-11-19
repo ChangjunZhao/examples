@@ -185,8 +185,26 @@ def main():
     # ---------- newer SDK surface (may not exist here; recorded either way) ----------
     check("newer", "get_mcp_url")(lambda: sbx.get_mcp_url())
     check("newer", "download_url")(lambda: sbx.download_url("/workspace/b.txt")[:60])
-    check("newer", "create_snapshot")(lambda: sbx.create_snapshot(name="snap1"))
-    check("newer", "fork")(lambda: sbx.fork())
+    _snap = {}
+    def _snapshot():
+        info = sbx.create_snapshot(name="snap1")
+        _snap["id"] = info.snapshot_id
+        return info
+    check("newer", "create_snapshot")(_snapshot)
+    check("newer", "list_snapshots")(
+        lambda: any(x.snapshot_id == _snap.get("id")
+                    for x in Sandbox.list_snapshots(limit=100).next_items()))
+    _forks = []
+    def _fork():
+        children = sbx.fork()
+        _forks.extend(children)
+        return children
+    check("newer", "fork")(_fork)
+    for child in _forks:
+        try: child.kill()
+        except Exception: pass
+    if _snap.get("id"):
+        check("newer", "delete_snapshot")(lambda: Sandbox.delete_snapshot(_snap["id"]))
 
     # ---------- pause / resume ----------
     check("lifecycle", "pause")(lambda: sbx.pause())
