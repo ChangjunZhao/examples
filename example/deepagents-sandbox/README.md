@@ -10,6 +10,9 @@ of which changes any behaviour measured here — with `deepagents` 0.6.12,
 `langchain-e2b` 0.0.6 and `langchain-sandrpod` 0.2.7: **12/12 backend
 assertions and 3/3 agent runs down each route**.
 
+Re-run against SandrPod **v0.12.1** on 2026-11-19: `backend_sweep.py` still
+passes **12/12** on both routes. The agent runs were not re-run for this pass.
+
 ## The two routes
 
 | | Package | Reaches SandrPod via |
