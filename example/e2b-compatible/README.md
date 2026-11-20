@@ -4,7 +4,7 @@ Companion code for *"Self-hosting an E2B-compatible sandbox stack, from an empty
 server"*. Four scripts take a blank VM to a deployment the **unmodified** `e2b`
 Python SDK talks to.
 
-Updated for SandrPod **v0.12.1**. The sweep targets the unmodified `e2b` SDK and
+Updated for SandrPod **v0.13.0**. The sweep targets the unmodified `e2b` SDK and
 records snapshots/fork alongside the original lifecycle, filesystem, command,
 PTY and port checks.
 
@@ -92,7 +92,7 @@ service DNS (`server`, `postgres`) stays stable.
 ## Snapshots and fork
 
 `create_snapshot()`, `list_snapshots()` and `fork()` are implemented in
-SandrPod v0.12.1 and exercised by `e2b_sweep.py`. A fork creates another running
+SandrPod v0.13.0 and exercised by `e2b_sweep.py`. A fork creates another running
 sandbox, so it needs a free sandbox slot; on a quota-limited workspace the
 per-item error is reported by the SDK rather than hiding the successful forks.
 
