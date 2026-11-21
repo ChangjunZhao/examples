@@ -10,8 +10,12 @@ of which changes any behaviour measured here — with `deepagents` 0.6.12,
 `langchain-e2b` 0.0.6 and `langchain-sandrpod` 0.2.7: **12/12 backend
 assertions and 3/3 agent runs down each route**.
 
-Re-run against SandrPod **v0.12.1** on 2026-11-19: `backend_sweep.py` still
-passes **12/12** on both routes. The agent runs were not re-run for this pass.
+Re-run against SandrPod **v0.13.3** on 2026-11-20: `backend_sweep.py` still
+passes **12/12** down the native `langchain-sandrpod` route. The E2B route was
+not re-run in that pass — it needs a deployment with a TLS domain for
+`E2B_DOMAIN` (the SDK builds `<port>-<sandbox>.<domain>` itself) — so its last
+run is the v0.12.1 pass, where both routes were 12/12. The agent runs were not
+re-run for either pass.
 
 ## The two routes
 
