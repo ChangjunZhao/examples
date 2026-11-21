@@ -4,7 +4,7 @@ Companion code for *"Self-hosting an E2B-compatible sandbox stack, from an empty
 server"*. Four scripts take a blank VM to a deployment the **unmodified** `e2b`
 Python SDK talks to.
 
-Updated for SandrPod **v0.13.0**. The sweep targets the unmodified `e2b` SDK and
+Updated for SandrPod **v0.13.3**. The sweep targets the unmodified `e2b` SDK and
 records snapshots/fork alongside the original lifecycle, filesystem, command,
 PTY and port checks.
 
