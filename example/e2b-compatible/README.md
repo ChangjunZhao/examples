@@ -4,7 +4,14 @@ Companion code for *"Self-hosting an E2B-compatible sandbox stack, from an empty
 server"*. Four scripts take a blank VM to a deployment the **unmodified** `e2b`
 Python SDK talks to.
 
-Updated for SandrPod **v0.13.3**. The sweep targets the unmodified `e2b` SDK and
+Updated for SandrPod **v0.13.3**.
+
+Re-verified on 2026-11-21 from an empty Alibaba Cloud Hong Kong VM (Ubuntu
+22.04) and a third-level domain: `e2b_sweep.py` passes **38/38**, snapshots and
+fork included. One difference from `02-issue-cert.sh`: that script asks lego for
+DNSPod (`--dns tencentcloud`) because the walkthrough's domain lives there; on a
+domain managed at Aliyun, `--dns alidns` with `ALICLOUD_ACCESS_KEY` /
+`ALICLOUD_SECRET_KEY` is the same DNS-01 flow. The sweep targets the unmodified `e2b` SDK and
 records snapshots/fork alongside the original lifecycle, filesystem, command,
 PTY and port checks.
 
